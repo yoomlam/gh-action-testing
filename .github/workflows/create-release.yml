@@ -25,6 +25,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           tag_prefix: 'v'
           tag_template: 'yyyy.mm.dd.i'
+          previous_tag: 'v2025.11.23.2'
 
       - name: echo release tag
         run: echo "Release tag from ${{ steps.create_release_tag.outputs.prev_release_tag }} to ${{ steps.create_release_tag.outputs.next_release_tag }}"
