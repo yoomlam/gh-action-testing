@@ -48,29 +48,27 @@ jobs:
           # 5) Expose as step output
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-    #   - name: Create and push tag
-    #     shell: bash
-    #     run: |
-    #       TAG="${{ steps.calc_tag.outputs.tag }}"
-    #       echo "Creating tag $TAG"
+      - name: echo release tag
+        run: echo "Release tag ${{ steps.calc_tag.outputs.tag }}"
 
-    #       git config user.name "github-actions[bot]"
-    #       git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Create and push tag
+        shell: bash
+        run: |
+          TAG="${{ steps.calc_tag.outputs.tag }}"
+          echo "Creating tag $TAG"
 
-    #       git tag "$TAG"
-    #       git push origin "$TAG"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git tag "$TAG"
+          git push origin "$TAG"
 
       - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1 # Use the official GitHub Action for creating releases
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is automatically provided by GitHub Actions
-        with:
-          tag_name: ${{ steps.calc_tag.outputs.tag }} # The tag name from the push event
-          release_name: Release ${{ steps.calc_tag.outputs.tag }}
-          body: |
-            ## Release Notes
-            - Changes in this release...
-            - Add more details here.
-          draft: false # Set to true to create a draft release
-          prerelease: false # Set to true for a pre-release
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.calc_tag.outputs.tag }}"
+          gh release create "$TAG" \
+            --title "Release $TAG" \
+            --generate-notes

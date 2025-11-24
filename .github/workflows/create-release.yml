@@ -4,7 +4,8 @@ permissions:
   contents: write
 
 on:
-  push:
+  # push:
+  workflow_dispatch:
 
 jobs:
   create_release:
