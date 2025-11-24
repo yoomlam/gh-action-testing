@@ -27,7 +27,7 @@ jobs:
       - name: echo release tag
         run: echo "Release tag from ${{ steps.create_release_tag.outputs.prev_release_tag }} to ${{ steps.create_release_tag.outputs.next_release_tag }}"
 
-      - uses: https://github.com/ncipollo/release-action@v1.20.0
+      - uses: ncipollo/release-action@v1.20.0
         with:
             tag: "${{ steps.create_release_tag.outputs.next_release_tag }}"
             # This commit will be used to create the tag if it does not exist
