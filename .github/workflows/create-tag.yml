@@ -4,9 +4,8 @@ on:
   # Run manually, or hook this up to whatever trigger you want
   workflow_dispatch:
   # Example: run on pushes to main
-  # push:
-  #   branches: [ main ]
   push:
+    branches: [ main ]
 
 jobs:
   tag:
