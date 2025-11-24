@@ -76,11 +76,15 @@ jobs:
             })
 
       - name: Create Release
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG="${{ steps.calc_tag.outputs.tag }}"
-          gh release create "$TAG" \
-            --title "Release $TAG" \
-            --generate-notes
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github_client.rest.repos.create_release({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: '${{ steps.calc_tag.outputs.tag }}',
+              name: '${{ steps.calc_tag.outputs.tag }}',
+              generate_release_notes: true,
+              draft: false,
+              prerelease: false
+            })
