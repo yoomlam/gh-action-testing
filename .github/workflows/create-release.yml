@@ -35,4 +35,6 @@ jobs:
             generateReleaseNotes: true
             makeLatest: true
 
-      - uses: ./.github/workflows/release-notes.yml
+  call-release-notes:
+    needs: create_release
+    uses: ./.github/workflows/release-notes.yml
