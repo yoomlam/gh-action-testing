@@ -2,7 +2,7 @@ name: Echo Release Notes
 
 on:
   release:
-    types: [published, released]
+    types: [published]
 
 jobs:
   echo-release-notes:
