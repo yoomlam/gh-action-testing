@@ -34,3 +34,5 @@ jobs:
             commit: "main"
             generateReleaseNotes: true
             makeLatest: true
+
+      - uses: ./.github/workflows/release-notes.yml
