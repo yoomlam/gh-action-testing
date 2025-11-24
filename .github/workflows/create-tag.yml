@@ -1,0 +1,76 @@
+name: Create release tag
+
+on:
+  # Run manually, or hook this up to whatever trigger you want
+  workflow_dispatch:
+  # Example: run on pushes to main
+  # push:
+  #   branches: [ main ]
+  push:
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # important: get all tags
+          fetch-depth: 0
+
+      - name: Calculate next tag for today
+        id: calc_tag
+        shell: bash
+        run: |
+          # 1) Get today's date as YYYY.MM.DD
+          DATE="$(date +'%Y.%m.%d')"
+          echo "Date: $DATE"
+
+          # 2) Find existing tags for today's date: vYYYY.MM.DD.*
+          LAST_TAG="$(git tag --list "v${DATE}.*" | sort -V | tail -n 1)"
+          echo "Last tag for today: ${LAST_TAG:-<none>}"
+
+          # 3) Determine next counter
+          if [ -z "$LAST_TAG" ]; then
+            i=1
+          else
+            # suffix after the last dot, e.g. v2025.11.24.03 -> 03
+            suffix="${LAST_TAG##*.}"
+            # 10# to avoid octal interpretation on leading zeroes
+            i=$((10#$suffix + 1))
+          fi
+
+          # 4) Build the tag as vYYYY.MM.DD.II (II = 2 digits)
+          printf -v TAG "v%s.%02d" "$DATE" "$i"
+          echo "Computed tag: $TAG"
+
+          # 5) Expose as step output
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+    #   - name: Create and push tag
+    #     shell: bash
+    #     run: |
+    #       TAG="${{ steps.calc_tag.outputs.tag }}"
+    #       echo "Creating tag $TAG"
+
+    #       git config user.name "github-actions[bot]"
+    #       git config user.email "github-actions[bot]@users.noreply.github.com"
+
+    #       git tag "$TAG"
+    #       git push origin "$TAG"
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1 # Use the official GitHub Action for creating releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is automatically provided by GitHub Actions
+        with:
+          tag_name: ${{ steps.calc_tag.outputs.tag }} # The tag name from the push event
+          release_name: Release ${{ steps.calc_tag.outputs.tag }}
+          body: |
+            ## Release Notes
+            - Changes in this release...
+            - Add more details here.
+          draft: false # Set to true to create a draft release
+          prerelease: false # Set to true for a pre-release
