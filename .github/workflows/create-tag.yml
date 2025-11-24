@@ -4,9 +4,8 @@ on:
   # Run manually, or hook this up to whatever trigger you want
   workflow_dispatch:
   # Example: run on pushes to main
-  # push:
-  #   branches: [ main ]
   push:
+    branches: [ main ]
 
 jobs:
   tag:
@@ -21,17 +20,16 @@ jobs:
           # important: get all tags
           fetch-depth: 0
 
-      - name: Calculate next tag for today
-        id: calc_tag
+      - name: Generate next tag
+        id: gen_tag
         shell: bash
         run: |
           # 1) Get today's date as YYYY.MM.DD
           DATE="$(date +'%Y.%m.%d')"
-          echo "Date: $DATE"
 
           # 2) Find existing tags for today's date: vYYYY.MM.DD.*
           LAST_TAG="$(git tag --list "v${DATE}.*" | sort -V | tail -n 1)"
-          echo "Last tag for today: ${LAST_TAG:-<none>}"
+          echo "Latest tag for $DATE: ${LAST_TAG:-<none>}"
 
           # 3) Determine next counter
           if [ -z "$LAST_TAG" ]; then
@@ -45,25 +43,13 @@ jobs:
 
           # 4) Build the tag as vYYYY.MM.DD.II (II = 2 digits)
           printf -v TAG "v%s.%02d" "$DATE" "$i"
-          echo "Computed tag: $TAG"
+          echo "Next tag: $TAG"
 
           # 5) Expose as step output
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: echo release tag
-        run: echo "Release tag ${{ steps.calc_tag.outputs.tag }}"
-
-    #   - name: Create and push tag
-    #     shell: bash
-    #     run: |
-    #       TAG="${{ steps.calc_tag.outputs.tag }}"
-    #       echo "Creating tag $TAG"
-
-    #       git config user.name "github-actions[bot]"
-    #       git config user.email "github-actions[bot]@users.noreply.github.com"
-
-    #       git tag "$TAG"
-    #       git push origin "$TAG"
+        run: echo "Release tag ${{ steps.gen_tag.outputs.tag }}"
 
       - name: Push new tag
         uses: actions/github-script@v6
@@ -72,16 +58,19 @@ jobs:
             github.rest.git.createRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: 'refs/tags/${{ steps.calc_tag.outputs.tag }}',
+              ref: 'refs/tags/${{ steps.gen_tag.outputs.tag }}',
               sha: context.sha
             })
 
-      - name: Create Release
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG="${{ steps.calc_tag.outputs.tag }}"
-          gh release create "$TAG" \
-            --title "Release $TAG" \
-            --generate-notes
+      - name: Push new tag
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github_client.rest.repos.create_release({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: '${{ steps.gen_tag.outputs.tag }}',
+              name: 'Release ${{ steps.gen_tag.outputs.tag }}',
+              generate_release_notes: true
+            })
+          
