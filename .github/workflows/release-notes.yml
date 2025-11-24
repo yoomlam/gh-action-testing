@@ -1,0 +1,19 @@
+name: Echo Release Notes
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  echo-release-notes:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Echo Release Information
+        run: |
+          echo "Release Name: ${{ github.event.release.name }}"
+          echo "Release ID: ${{ github.event.release.id }}"
+          echo "Release Tag: ${{ github.event.release.tag_name }}"
+          echo "Release Notes:"
+          echo "${{ github.event.release.body }}"
+          echo "JSON: ${{ toJSON(github.event) }}"
