@@ -12,6 +12,8 @@ on:
 jobs:
   create_release:
     runs-on: ubuntu-latest
+    outputs:
+      next_release_tag: ${{ steps.create_release_tag.outputs.next_release_tag }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -37,4 +39,8 @@ jobs:
 
   call-release-notes:
     needs: create_release
-    uses: ./.github/workflows/release-notes.yml
+    steps:
+      - name: Echo Release Information
+        run: |
+          echo "next release tag: ${{ needs.create_release.outputs.next_release_tag }}"
+          echo "JSON: ${{ toJSON(github) }}"

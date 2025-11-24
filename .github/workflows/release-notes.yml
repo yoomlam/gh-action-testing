@@ -1,7 +1,6 @@
 name: Echo Release Notes
 
 on:
-  workflow_call:  # allows this workflow to be called by other workflows
   release:
     types: [created, published]
 
