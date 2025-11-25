@@ -1,9 +1,7 @@
 name: Create release tag
 
 on:
-  # Run manually, or hook this up to whatever trigger you want
   workflow_dispatch:
-  # Example: run on pushes to main
   push:
     branches: [ main ]
 
@@ -16,56 +14,39 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          # important: get all tags
-          fetch-depth: 0
 
-      - name: Calculate next tag for today
+      - name: Calculate next tag index
         id: calc_tag
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 1) Get today's date as YYYY.MM.DD
-          DATE="$(date +'%Y.%m.%d')"
-          echo "Date: $DATE"
+          # Get today's date as YYYY.MM.DD in Central Time
+          DATE="$(TZ="America/Chicago" date '+%Y.%m.%d')"
+          echo "Date in Central Time: $DATE"
 
-          # 2) Find existing tags for today's date: vYYYY.MM.DD.*
-          LAST_TAG="$(git tag --list "v${DATE}.*" | sort -V | tail -n 1)"
+          # Find existing release tags for today's date: vYYYY.MM.DD.*
+          # Retrieve recently created tags only, some of which may not follow the naming convention
+          LAST_TAG="$(gh release list --order desc --exclude-drafts --exclude-pre-releases --limit 20 --json tagName --jq '.[] | .tagName' | grep "^v${DATE}\." | sort --version-sort | tail -n 1)"
           echo "Last tag for today: ${LAST_TAG:-<none>}"
 
-          # 3) Determine next counter
+          # Determine next counter (TAG_INDEX)
           if [ -z "$LAST_TAG" ]; then
-            i=1
+            TAG_INDEX=1
           else
             # suffix after the last dot, e.g. v2025.11.24.03 -> 03
-            suffix="${LAST_TAG##*.}"
+            TAG_SUFFIX="${LAST_TAG##*.}"
             # 10# to avoid octal interpretation on leading zeroes
-            i=$((10#$suffix + 1))
+            TAG_INDEX=$((10#$TAG_SUFFIX + 1))
           fi
 
-          # 4) Build the tag as vYYYY.MM.DD.II (II = 2 digits)
-          printf -v TAG "v%s.%02d" "$DATE" "$i"
+          # Build the tag as vYYYY.MM.DD.II (II = 2 digits)
+          printf -v TAG "v%s.%02d" "$DATE" "$TAG_INDEX"
           echo "Computed tag: $TAG"
-
-          # 5) Expose as step output
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-      - name: echo release tag
-        run: echo "Release tag ${{ steps.calc_tag.outputs.tag }}"
-
-    #   - name: Create and push tag
-    #     shell: bash
-    #     run: |
-    #       TAG="${{ steps.calc_tag.outputs.tag }}"
-    #       echo "Creating tag $TAG"
-
-    #       git config user.name "github-actions[bot]"
-    #       git config user.email "github-actions[bot]@users.noreply.github.com"
-
-    #       git tag "$TAG"
-    #       git push origin "$TAG"
-
       - name: Push new tag
-        uses: actions/github-script@v6
+        uses: actions/github-script@v8
         with:
           script: |
             github.rest.git.createRef({
@@ -76,7 +57,7 @@ jobs:
             })
 
       - name: Create Release
-        uses: actions/github-script@v6
+        uses: actions/github-script@v8
         with:
           script: |
             github.rest.repos.createRelease({
